@@ -16,6 +16,7 @@ namespace Sender.ViewModels
             get { return this.iP; }
             set
             {
+
                 this.iP = value;
             }
         }
@@ -61,7 +62,7 @@ namespace Sender.ViewModels
                 // Send the message to the connected TcpServer.
                 stream.Write(data, 0, data.Length);
 
-                Console.WriteLine("Sent: {0}", msg);
+                //Console.WriteLine("Sent: {0}", msg);
 
                 // Receive the TcpServer.response.
 
@@ -74,7 +75,7 @@ namespace Sender.ViewModels
                 // Read the first batch of the TcpServer response bytes.
                 Int32 bytes = stream.Read(data, 0, data.Length);
                 responseData = System.Text.Encoding.ASCII.GetString(data, 0, bytes);
-                Console.WriteLine("Received: {0}", responseData);
+                //Console.WriteLine("Received: {0}", responseData);
 
                 // Close everything.
                 stream.Close();
@@ -82,15 +83,15 @@ namespace Sender.ViewModels
             }
             catch (ArgumentNullException e)
             {
-                Console.WriteLine("ArgumentNullException: {0}", e);
+                //Console.WriteLine("ArgumentNullException: {0}", e);
             }
             catch (SocketException e)
             {
-                Console.WriteLine("SocketException: {0}", e);
+                //Console.WriteLine("SocketException: {0}", e);
             }
 
-            Console.WriteLine("\n Press Enter to continue...");
-            Console.Read();
+            //Console.WriteLine("\n Press Enter to continue...");
+            //Console.Read();
         }
     }
 }
