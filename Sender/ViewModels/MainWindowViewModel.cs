@@ -14,7 +14,9 @@ namespace Sender.ViewModels
         private string iP;
         private string message;
         private int port;
+        private TcpClient client;
         public string IP
+            
         {
 
             get { return this.iP; }
@@ -42,11 +44,13 @@ namespace Sender.ViewModels
                 this.message = value;
             }
         }
+       
         public void OnClickCommand()
         {
             string ipNum = IP;
             string msg = Message;
             int port = Port;
+            client = new TcpClient(IP, port);
             try
             {
                 var devices = new List<IMidiInputDevice>();
@@ -61,25 +65,14 @@ namespace Sender.ViewModels
 
                         //inputDevice.ControlChange += ControlChangeHandler;
                         inputDevice.Open();
-                       inputDevice.NoteOn += ControlChangeHandler;
+                        inputDevice.NoteOn += ControlChangeHandler;
+                        inputDevice.PolyphonicKeyPressure += PolyphonicHandler;
+                        inputDevice.PitchBend += PitchBendHandler;
                     }
-
-                    //Console.WriteLine("Press any key to stop...");
-                    //Console.ReadKey();
 
                 }
                 catch { }
-                //finally
-                //{
-                //    foreach (var device in devices)
-                //    {
-                //        device.NoteOn -= ControlChangeHandler;
-                //        device.Dispose();
-                //    }
-                //}
-                
-                
-                
+                client.Close();
             }
             catch (ArgumentNullException e)
             {
@@ -89,37 +82,17 @@ namespace Sender.ViewModels
             {
                 //Console.WriteLine("SocketException: {0}", e);
             }
-
-            //Console.WriteLine("\n Press Enter to continue...");
-            //Console.Read();
         }
-        public  void ControlChangeHandler(IMidiInputDevice sender, in NoteOnMessage msg)
+        public void ControlChangeHandler(IMidiInputDevice sender, in NoteOnMessage msg)
         {
-            //System.IO.File.WriteAllText(@"C:\Users\AndreaLazzi\Downloads\WriteLines.txt", msg.ToString());
-
-            //Console.WriteLine($"[{sender.Name}] ControlChange: Channel:{msg.Channel} Control:{msg.Velocity} Value:{msg.Velocity}");
-            //string msg2 = msg.Key.ToString();
-
-            // Create a TcpClient.
-            // Note, for this client to work you need to have a TcpServer
-            // connected to the same address as specified by the server, port
-            // combination.
-            TcpClient client = new TcpClient(IP, port);
-
             // Translate the passed message into ASCII and store it as a Byte array.
-            Byte[] data = System.Text.Encoding.ASCII.GetBytes(msg.Key.ToString() + "," + msg.Velocity.ToString() + "," + RtMidi.Core.Enums.Channel.Channel1.ToString());
+            Byte[] data = System.Text.Encoding.ASCII.GetBytes("NoteOnMessage" + "," + msg.Key.ToString() + "," + msg.Velocity.ToString() + "," + RtMidi.Core.Enums.Channel.Channel1.ToString());
             NoteOnMessage message = new NoteOnMessage((Channel)Enum.Parse(typeof(Channel), data[2].ToString()), (Key)Enum.Parse(typeof(Key), data[0].ToString()), Convert.ToInt32(data[1]));
-            // Get a client stream for reading and writing.
-            //  Stream stream = client.GetStream();
 
             NetworkStream stream = client.GetStream();
 
             // Send the message to the connected TcpServer.
             stream.Write(data, 0, data.Length);
-
-            //Console.WriteLine("Sent: {0}", msg);
-
-            // Receive the TcpServer.response.
 
             // Buffer to store the response bytes.
             data = new Byte[256];
@@ -134,12 +107,67 @@ namespace Sender.ViewModels
 
             // Close everything.
             stream.Close();
-            client.Close();
 
-        } 
+        }
+
+
+
+        public void PolyphonicHandler(IMidiInputDevice sender, in PolyphonicKeyPressureMessage msg)
+        {
+            // Translate the passed message into ASCII and store it as a Byte array.
+            Byte[] data = System.Text.Encoding.ASCII.GetBytes("PolyphonicKeyPressureMessage" + "," + msg.Key.ToString() + "," + msg.Pressure.ToString() + "," + RtMidi.Core.Enums.Channel.Channel1.ToString());
+            PolyphonicKeyPressureMessage message = new PolyphonicKeyPressureMessage((Channel)Enum.Parse(typeof(Channel), data[2].ToString()), (Key)Enum.Parse(typeof(Key), data[0].ToString()), Convert.ToInt32(data[1]));
+
+            NetworkStream stream = client.GetStream();
+
+            // Send the message to the connected TcpServer.
+            stream.Write(data, 0, data.Length);
+
+            // Buffer to store the response bytes.
+            data = new Byte[256];
+
+            // String to store the response ASCII representation.
+            String responseData = String.Empty;
+
+            // Read the first batch of the TcpServer response bytes.
+            Int32 bytes = stream.Read(data, 0, data.Length);
+            responseData = System.Text.Encoding.ASCII.GetString(data, 0, bytes);
+            //Console.WriteLine("Received: {0}", responseData);
+
+            // Close everything.
+            stream.Close();
+
+        }
+
+        public void PitchBendHandler(IMidiInputDevice sender, in PitchBendMessage msg)
+        {
+            // Translate the passed message into ASCII and store it as a Byte array.
+            Byte[] data = System.Text.Encoding.ASCII.GetBytes("PitchBendMessage" + "," + msg.Channel.ToString() + "," + msg.Value.ToString());
+            //PitchBendMessage message = new PitchBendMessage((Channel)Enum.Parse(typeof(Channel), data[2].ToString()), (Key)Enum.Parse(typeof(Key), data[0].ToString()), Convert.ToInt32(data[1]));
+
+            NetworkStream stream = client.GetStream();
+
+            // Send the message to the connected TcpServer.
+            stream.Write(data, 0, data.Length);
+
+            // Buffer to store the response bytes.
+            data = new Byte[256];
+
+            // String to store the response ASCII representation.
+            String responseData = String.Empty;
+
+            // Read the first batch of the TcpServer response bytes.
+            Int32 bytes = stream.Read(data, 0, data.Length);
+            responseData = System.Text.Encoding.ASCII.GetString(data, 0, bytes);
+            //Console.WriteLine("Received: {0}", responseData);
+
+            // Close everything.
+            stream.Close();
+
+        }
     }
 
-   
+
 
 
 }
